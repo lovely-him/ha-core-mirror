@@ -1,0 +1,48 @@
+name: Mirror HA Core Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      core_version:
+        description: 'Core version to mirror (e.g. 2026.2.3)'
+        required: true
+      mirror_landingpage:
+        description: 'Also mirror landingpage tag'
+        type: boolean
+        default: false
+
+env:
+  SOURCE_MACHINE: odroid-m1
+  TARGET_MACHINE: orangepi3b
+  SOURCE_REGISTRY: ghcr.io/home-assistant
+  TARGET_REGISTRY: ghcr.io/lovely-him
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Install skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo
+
+      - name: Login to target registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Mirror Core image
+        run: |
+          SOURCE="${SOURCE_REGISTRY}/${SOURCE_MACHINE}-homeassistant:${{ inputs.core_version }}"
+          TARGET="${TARGET_REGISTRY}/${TARGET_MACHINE}-homeassistant:${{ inputs.core_version }}"
+          echo "Copying ${SOURCE} -> ${TARGET}"
+          skopeo copy "docker://${SOURCE}" "docker://${TARGET}"
+
+      - name: Mirror landingpage image
+        if: ${{ inputs.mirror_landingpage }}
+        run: |
+          SOURCE="${SOURCE_REGISTRY}/${SOURCE_MACHINE}-homeassistant:landingpage"
+          TARGET="${TARGET_REGISTRY}/${TARGET_MACHINE}-homeassistant:landingpage"
+          echo "Copying ${SOURCE} -> ${TARGET}"
+          skopeo copy "docker://${SOURCE}" "docker://${TARGET}"
