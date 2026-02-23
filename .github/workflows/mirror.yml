@@ -5,11 +5,13 @@ on:
     inputs:
       core_version:
         description: 'Core version to mirror (e.g. 2026.2.3)'
+        type: string
         required: true
       mirror_landingpage:
         description: 'Also mirror landingpage tag'
         type: boolean
-        default: false
+        required: false
+        default: 'false'
 
 env:
   SOURCE_MACHINE: odroid-m1
